@@ -206,6 +206,33 @@ suite('ejs.compile(str, options)', function () {
   });
 });
 
+suite('ejs.renderFile(path, data, options, cb)', function () {
+  test('does not read settings from the prototype chain', function (done) {
+    var template = path.join(__dirname, 'tmp', 'prototype-settings.ejs');
+    var polluted = {user: 'mde'};
+
+    fs.writeFileSync(template, '<p><%= user %></p>');
+    Object.prototype.settings = {
+      'view options': {
+        escape: function (markup) {
+          return 'polluted:' + markup;
+        }
+      }
+    };
+
+    ejs.renderFile(template, polluted, function (err, str) {
+      delete Object.prototype.settings;
+
+      if (err) {
+        return done(err);
+      }
+
+      assert.equal(str, '<p>mde</p>');
+      done();
+    });
+  });
+});
+
 /* Old API -- remove when this shim goes away */
 suite('ejs.render(str, dataAndOpts)', function () {
   test('render the template with data/opts passed together', function () {
